@@ -91,3 +91,75 @@ import { Component, OnInit } from '@angular/core';
 	- imports are other exported declarations from other modules we want to make available in the current module (we want BrowswerModule to be available to components in our AppModule)
 	- declarations are to make directives (including components and pipes) from the current module available to other directives also in the current module. Whenever we create another component in the same module, and we want them to talk to each other, they both have to be declared here.
 	- bootstrap is a special property, it tells Angular what file to "bootstrap" or which file to start with first. It is the first thing that loads.
+
+## Creating Components
+You can create components with the Angular CLI command:
+
+`ng generate component componentName` or `ng g c componentName`
+
+It will automatically create a folder with 4 files, a unit test file, an html template, a css file, and the component code.
+
+You can also add on the -d flag for "dryrun" for any Angular CLI command, which will tell you what the command will do without actually altering your file structure. ex: `ng g c customerTable -d`
+
+When naming files, you normally do nameOfThing.typeOfThing.extension or like `customers.component.ts`
+
+### Another example of a component
+
+    import { Component, OnInit } from '@angular/core';
+    
+    @Component({
+	    selector:  'app-customers',
+	    templateUrl:  './customers.component.html'
+    })
+    
+    export class CustomersComponent implements OnInit {
+	    title: string;
+	    people: any[];
+    
+	    constructor() {}
+    
+	    ngOnInit() {
+		    this.title =  'Customers';
+		    this.people = [];
+	    }
+    }
+- Notice how in the @Component decorator, instead of "template" we use "templateUrl", which will reference another html file.
+- Also it is important that this is exported so that a module can import it.
+
+
+### Another example of a module
+
+    import { NgModule } from '@angular/core';
+    import { CommonModule } from '@angular/common';
+
+    import { CustomersComponent } from './customers.component';
+
+    @NgModule({
+	    imports: [ CommonModule ],
+	    declarations: [ CustomersComponent ],
+	    exports: [ CustomersComponent ]
+    })
+    
+    export class CustomersModule { }
+- This is a CustomersModule, which is another module we created seperate from the AppModule, and shows an example of other modules/components working with each other.
+- Notice we import the CustomerComponent we exported from the last example.
+- Instead of importing BrowserModule, we import CommonModule. Importing browserModule shouldn't be done more than once. If you want that functionality, child modules import "CommonModule", which inherits the imports of the parent.
+- NgModule explanation:
+	- We want this shared functionality to be available to this module, so under imports we import [ CommonModule ].
+	- We want other components in the CustomersModule to be able to use the CustomersComponent, so we declare [ CustomersComponent ].
+	- We want other modules to be able to also use the CustomersComponent in this module, so we export [ CustomersComponent ].
+
+Meanwhile in the original app.module, we import the CustomersModule so that the actual app can use it:
+
+    import { NgModule } from '@angular/core';
+    import { BrowserModule } from '@angular/platform-browser';
+    
+    import { CustomersModule } from './customers/customers.module';
+    import { AppComponent } from './app.component';
+    
+    @NgModule({
+	    imports: [ BrowserModule, CustomersModule ],
+	    declarations: [ AppComponent ],
+	    bootstrap: [ AppComponent ]
+    })
+    export  class AppModule { }
