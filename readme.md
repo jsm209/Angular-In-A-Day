@@ -163,3 +163,84 @@ Meanwhile in the original app.module, we import the CustomersModule so that the 
 	    bootstrap: [ AppComponent ]
     })
     export  class AppModule { }
+    
+    
+## Data Binding
+
+ - It's how we get data from the code to the template. 
+ - **Property binding** is how we get data from the component code to the template.
+ - **Event binding** is how we get data from the template (ex: click events) to
+   the component code.
+- Data binding syntax:
+	- Write values using interpolation: {{ propName }}
+	- Bind to DOM  properties using **[property]** or **bind-property**
+		- Includes styling properties (ex: `[style.color]="textColor"` and `[class.active]="isActive"`)
+	- Bind to DOM  events using **(event)** or **on-event**
+- Built-in Directives:
+	- Directives are classes that add additional behavior to elements
+	- ex: ngFor, ngIf, ngClass, ngStyle, ngModel, etc.
+
+### Basic Data Binding Example:
+#### customers.component.html
+
+    <h1 [hidden]="!isVisible">{{ title }}</h1>
+    
+    <button (click)="changeVisibility()">Show/Hide</button>
+
+
+
+#### customers.component.ts
+
+    import { Component } from '@angular/core';
+    
+    @Component({
+	    selector:  'app-customers',
+	    templateUrl:  './customers.component.html'
+    })
+    
+    export  class CustomersComponent {
+	    title: string;
+	    isVisible =  true;
+	    
+	    changeVisibility() {
+		    this.isVisible =  !this.isVisible;
+	    }
+	}
+
+
+## Directives and Interpolation
+- Structural directives are denoted by a * which means that they will change the structure of the DOM. (ex: *ngFor="")
+
+### Example of directives and interpolation
+
+    <table  class="table table-hover">
+	    <thead>
+		    <tr>
+			    <th>Name</th>
+			    <th>City</th>
+			    <th>Order Total</th>
+		    </tr>
+	    </thead>
+	    <tr *ngFor="let cust of filteredCustomers">
+		    <td>
+			    <a>
+				    {{ cust.name }}
+			    </a>
+		    </td>
+		    <td>{{ cust.city }}</td>
+		    <td>{{ cust.orderTotal }}</td>
+	    </tr>
+	    <tr *ngIf="filteredCustomers && filteredCustomers.length">
+		    <td  colspan="2">&nbsp;</td>
+		    <td>
+			    {{ customersOrderTotal }}
+		    </td>
+	    </tr>
+	    <tr *ngIf="!filteredCustomers || !filteredCustomers.length">
+		    <td  colspan="4">No customers found</td>
+	    </tr>
+    
+    </table>
+    Number of Customers: {{ filteredCustomers.length }}
+- Loops through filteredCustomers, takes out relevant variables and references them with cust.property to display them in a table.
+- There are also ngIf statements for displaying more data or messages depending on if filteredCustomers is empty or not.
