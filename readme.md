@@ -244,3 +244,139 @@ Meanwhile in the original app.module, we import the CustomersModule so that the 
     Number of Customers: {{ filteredCustomers.length }}
 - Loops through filteredCustomers, takes out relevant variables and references them with cust.property to display them in a table.
 - There are also ngIf statements for displaying more data or messages depending on if filteredCustomers is empty or not.
+
+## Event Binding
+- Detects things like button click, mouse moves, etc.
+- Put raw DOM event in parenthesis, followed by the callback function.
+- ex: `<th (click)="sort('name')">Name</th>`will call the sort function, passing in the variable string 'name'.
+
+
+## Input Properties
+- A way for child components to accept input from its parent component. This is useful for passing data from the parent to the child.
+- You have to create an input property if you want to pass data down.
+- You use the @Input() decorator and bind get/set blocks.
+
+### Example of binding input properties
+In this example, the child is the `customers-list` component who wants data from its parent, `customers` component.
+#### customers-list.component.ts
+
+    private  _customers: ICustomer[] = [];
+	    @Input() get customers(): ICustomer[] {
+		    return  this._customers;
+	    }
+	    
+	    set customers(value: ICustomer[]) {
+		    if (value) {
+		    this.filteredCustomers =  this._customers = value;
+		    this.calculateOrders();
+	    }
+    }
+- We only need to put the input decorator on one of the blocks and Angular will know that it applies to both.
+- We call the get/set blocks get *customers*() and set *customers*(), meaning that the input property's name is "customers".
+
+#### customers.component.html (parent template where child component lives)
+
+    <app-customers-list [customers]="people"></app-customers-list>
+- Notice  how `[customers]` is contained in square brackets, denoting a DOM property. It is set to `"people"`, which is a variable (data) found in the parent code (customers.component.ts). In this way data is passed from the parent (customers.component) to the child (customers-list.component).
+
+## Pipes
+- Example of a pipe: `{{ cust.name | uppercase }}` 
+- Takes data on left, puts it through the pipe, and outputs it.
+- Useful for transforming data quickly, like adding a currency symbol, capitalization, etc.
+- Another example, but with a pipe that takes in parameters: `{{ cust.orderTotal | currency:'USD':'symbol' }}`
+
+### Example of Building Custom Pipes
+
+    import { Pipe, PipeTransform } from '@angular/core';
+    
+    @Pipe({ name:  'capitalize' })
+    export  class CapitalizePipe implements PipeTransform {
+	    transform(value: any) {
+		    if (value) {
+			    return value.charAt(0).toUpperCase() + value.slice(1);
+		    }
+		    return value;
+	    }
+    }
+
+- Remember to register the pipe with at least one module to use it in component tempates.
+
+### Example of Importing Custom Pipes
+
+    import { NgModule } from '@angular/core';
+    import { CapitalizePipe } from './capitalize.pipe';
+    
+    @NgModule({
+	    declarations: [ CapitalizePipe ],
+	    exports: [ CapitalizePipe ]
+    })
+    
+    export  class SharedModule { }
+
+- In the declaration field of a module, you can put pipes, components, or directives.
+- In this specific example, this module is called "shared" module, meaning other modules import it to use shared functionality. If we want other modules to have access to the custom pipe, you also have to put the pipe in the export field of the shared module to make it available.
+
+
+## Output Properties
+- Emitting data from child to parent (input properties are vice versa, parent to child).
+- EventEmitter is a way for a child to send data up to a parent.
+
+### Filtering Example for EventEmitter
+
+    import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
+    
+    @Component({
+	    selector:  'filter-textbox',
+	    template: `
+		    Filter: <input  type="text" [(ngModel)]="filter" />
+	    `
+    })
+    
+    export  class FilterTextboxComponent implements OnInit {
+    
+	    private  _filter: string;
+	    @Input() get filter() {
+		    return  this._filter;
+	    }
+    
+	    set filter(val: string) {
+		    this._filter = val;
+		    this.changed.emit(this.filter);  //Raise changed event
+	    }
+	    
+	    @Output() changed: EventEmitter<string> =  new EventEmitter<string>();
+    
+	    constructor() {}
+	    
+	    ngOnInit() {
+	    }
+    }
+- Notice how the input property is named "filter". 
+- In the set filter function, it emits a value to "this.changed", which is another variable of type EventEmitter.
+- "changed" is an output property of a new object of type EventEmitter. It will pass a value of type string up to the parent so that the parent can handle the filtering logic.
+- Notice `<input  type="text" [(ngModel)]="filter" />` this is a two way data binding, allowing the filter variable to be consistent with the input element. 
+	- It will take the value of filter, and with the square brackets "[]" update the value of the input, and with the parenthesis "()" it will also update the `filter` variable.
+	- Remember ngModel needs to be imported. It is in the built in angular module called FormsModule. 
+
+### Using the Emitted Event Object in Parent
+
+    <filter-textbox (changed)="filter($event)"></filter-textbox>
+- Notice above how we use the DOM event "changed" so that whenever the input is changed, it will call the function called "filter" and pass in an object called "$event".
+- $event stores the filter text we want in a property called "data", but we don't have to do $event.data because Angular automatically extracts it for us.
+- We can use the data in a function to filter results like in this example:
+
+
+	    filter(data: string) {
+		    if (data) {
+			    this.filteredCustomers =  this.customers.filter((cust: ICustomer) => {
+				    return cust.name.toLowerCase().indexOf(data.toLowerCase()) > -1  ||
+					    cust.city.toLowerCase().indexOf(data.toLowerCase()) > -1  ||
+					    cust.orderTotal.toString().indexOf(data) > -1;
+			    });
+		    } else {
+			    this.filteredCustomers =  this.customers;
+		    }
+			    this.calculateOrders();
+	    }
+
+
