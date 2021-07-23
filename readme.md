@@ -380,3 +380,124 @@ In this example, the child is the `customers-list` component who wants data from
 	    }
 
 
+## Services
+- Important for reusing code and sharing it across other components or services.
+- Ex: We might want our components to get data from a server but we don't want to tell every component how to do it. Also different components might use the same data in different ways. We can extract this out to a service, or *abstraction*.
+- By default, services are **singletons**, or an object created once in memory, and it's shared and reused in different spots in the application.
+- In Angular, it's easy to create. It is a simple class with the *Injectable* decorator.
+	- Allows the service to be used in the constructor of other service, or dependency injection.
+
+### Example of a Service
+
+    import { Injectable } from '@angular/core';
+    import { HttpClient } from '@angular/common/http';
+    
+    import { Observable } from 'rxjs/Observable';
+    import { map, catchError } from 'rxjs/operators';
+    
+    import { ICustomer, IOrder } from '../../app/shared/interfaces';
+    
+    @Injectable()
+    export  class DataService {
+    
+	    baseUrl: string =  'assets/';
+    
+	    constructor() { }
+    
+	    private handleError(error: any) {
+		    console.error('server error:', error);
+		    if (error.error instanceof Error) {
+			    const errMessage = error.error.message;
+			    return Observable.throw(errMessage);
+			    // Use the following instead if using lite-server
+			    // return Observable.throw(err.text() || 'backend server error');
+			}
+		    return Observable.throw(error ||  'Node.js server error');
+	    }
+    }
+- `import { Injectable } from '@angular/core';` is necessary for creating any service. It is used for the constructor so that we can inject other dependencies, but the best practice is to use the Injectable decorator for all services even if you aren't injecting anything.
+- We don't *declare* services. We *provide* services. In other words, in the module the service belongs to, we give the serviceName to a providers field, not the normal declarations field.
+
+### Example of Making Service Available in core.module.ts
+
+    import { NgModule } from '@angular/core';
+    import { HttpClientModule } from '@angular/common/http';
+    
+    import { DataService } from './data.service';
+    import { SorterService } from './sorter.service';
+    
+    @NgModule({
+	    imports: [ ],
+	    providers: [ DataService, SorterService ]
+    })
+    export  class CoreModule { }
+- Notice that the services are in *providers*, not declarations in the module declaration.
+
+## Making HTTP Calls in Angular
+
+### Observable Objects
+
+- Used for asynchronous requests. It is a part of rxjs (reaactive extensions for javascript)
+- `import { Observable } from 'rxjs/Observable';`
+- It allows us to start an operation, and allows someone else to subscribe to it so that when the data gets back from the server they'll get it.
+
+### Example HTTP Call
+
+    import { Injectable } from '@angular/core';
+    import { HttpClient } from '@angular/common/http';
+    
+    import { Observable } from 'rxjs/Observable';
+    import { map, catchError } from 'rxjs/operators';
+    
+    import { ICustomer, IOrder } from '../../app/shared/interfaces';
+    
+    @Injectable()
+    export  class DataService {
+    
+	    baseUrl: string =  'assets/';
+    
+	    constructor(private  http: HttpClient) { }
+    
+	    getCustomers() : Observable<ICustomer[]> {
+		    return  this.http.get<ICustomer[]>(this.baseUrl +  'customers.json')
+    
+			    .pipe(
+				    catchError(this.handleError)
+			    );
+	    }
+
+	    getCustomer(id: number) : Observable<ICustomer> {
+		    return  this.http.get<ICustomer[]>(this.baseUrl +  'customers.json')
+			    .pipe(
+				    map(customers => {
+					    let customer = customers.filter((cust: ICustomer) => cust.id === id);
+					    return (customer && customer.length) ? customer[0] :  null;
+				    }),
+				    catchError(this.handleError)
+			    )
+	    }
+    
+	    getOrders(id: number) : Observable<IOrder[]> {
+		    return  this.http.get<IOrder[]>(this.baseUrl +  'orders.json')
+			    .pipe(
+				    map(orders => {
+				    let custOrders = orders.filter((order: IOrder) => order.customerId === id);
+				    return custOrders;
+			    }),
+			    catchError(this.handleError)
+		    );
+	    }
+    
+	    private handleError(error: any) {
+		    console.error('server error:', error);
+		    if (error.error instanceof Error) {
+			    const errMessage = error.error.message;
+			    return Observable.throw(errMessage);
+			    // Use the following instead if using lite-server
+			    // return Observable.throw(err.text() || 'backend server error');
+		    }
+			    return Observable.throw(error ||  'Node.js server error');
+		}
+	}
+- We use this.http.get to make a get request, where `<returnType>(URL)` is used. 
+- We use a .pipe to handle errors, data flows through the pipe and we attach operators to the pipe (in this example, we use `catchError`) to filter the results.
