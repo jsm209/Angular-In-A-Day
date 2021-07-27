@@ -501,3 +501,112 @@ In this example, the child is the `customers-list` component who wants data from
 	}
 - We use this.http.get to make a get request, where `<returnType>(URL)` is used. 
 - We use a .pipe to handle errors, data flows through the pipe and we attach operators to the pipe (in this example, we use `catchError`) to filter the results.
+
+## Injecting Services into a Component
+- Injecting means to use the service in a component.
+- Import services into a 'core' module or some kind of shared module by putting it under 'providers' in a particular module, then import that into the root app module so that other child modules can use the services. Alternatively, you could import the services into each module that needs it but this is repeated work.
+
+### Example Core Services Module
+
+    import { NgModule } from '@angular/core';
+    import { HttpClientModule } from '@angular/common/http';
+    
+    import { DataService } from './data.service';
+    import { SorterService } from './sorter.service';
+    
+    @NgModule({
+	    imports: [ HttpClientModule ],
+	    providers: [ DataService, SorterService ]
+    })
+    
+    export  class CoreModule { }
+
+### Example App Module
+
+    import { NgModule } from '@angular/core';
+    import { BrowserModule } from '@angular/platform-browser';
+    
+    import { CoreModule } from './core/core.module';
+    import { SharedModule } from './shared/shared.module';
+    import { CustomersModule } from './customers/customers.module';
+    import { AppComponent } from './app.component';
+    
+    @NgModule({
+	    imports: [ BrowserModule, CoreModule, CustomersModule, SharedModule ],
+	    declarations: [ AppComponent ],
+	    bootstrap: [ AppComponent ]
+    })
+    
+    export  class AppModule { }
+
+### Example of Injecting Service into Component and Subscribing to an Observable
+
+    import { Component, OnInit } from '@angular/core';
+    
+    import { DataService } from '../core/data.service';
+    
+    @Component({
+	    selector:  'app-customers',
+	    templateUrl:  './customers.component.html'
+    })
+    
+    export  class CustomersComponent implements OnInit {
+	    title: string;
+	    people: any[];
+    
+	    constructor(private  dataService: DataService) {}
+    
+	    ngOnInit() {
+	    
+	    this.title =  'Customers';
+	    this.dataService.getCustomers()
+			.subscribe((customers: ICustomer[]) => this.people = customers);
+	    
+	    }
+    
+    }
+
+- We import it above and inject it into the constructor.
+- Can't just do `this.people =  this.dataService.getCustomers();` because that returns an observable.
+- `dataService.getCustomers()` is a cold observable. It is dormant until you tell it to do something, like actually fetch the results. We can tell it to do something by subscribing to it.
+- It's similar to a promise, you have to use a callback function to assign the new customers results to the this.people array.
+
+## Routing Overview
+- Used for navigation, showing and hiding groups of components.
+- Used to hook up urls to components (ex: bookmarking the url would jump to that part of the app).
+- Loads different components by loading different routes. Components are loaded into a `<router-outlet></router-outlet>`
+
+
+## Creating a Routing Module with Routes
+- CLI command `ng new my-project --routing` would set us up with a routing file and automatically import it into our app module. You should do this when you start a project.
+
+
+### Example app-routing.module.ts
+
+    import { NgModule } from '@angular/core';
+    import { RouterModule, Routes } from '@angular/router';
+    
+    const  routes: Routes = [
+	    { path:  '',  pathMatch:  'full',  redirectTo:  '/customers'},
+	    { path:  '**',  pathMatch:  'full',  redirectTo:  '/customers' }
+    ];
+    
+    @NgModule({
+	    imports: [ RouterModule.forRoot(routes) ],
+	    exports: [ RouterModule ]
+    })
+    
+    export  class AppRoutingModule {
+   
+    }
+- Notice import RouterModule and Routes
+- We define a variable routes of type Routes so that all the objects conform to what a route looks like. It might be easy to make typos with a lot of routes and this will catch that.
+	- In the routes object, path is the path after the domain, pathMatch is how it maatches, and redirectTo can redirect to components or other route paths.
+	- A path of '**' is a wildcard that will match by default if no other route paths match.
+- We only ever write `RouterModule.forRoot(routes)` once in an application. We plug in our routes into forRoot to register our routes with Angular.
+- Also notice we export [ RouterModule ]. We want to make it available to anyone importing this routes module so they don't have to rewrite all the setup.
+- Lastly, we import this routes module into the app module so the rest of the app's modules can also use the routes.
+
+
+### Using Router Outlet
+- Responsible for marking spots on the page where components should go or appear when the route is triggered.
