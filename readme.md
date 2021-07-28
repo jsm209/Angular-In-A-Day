@@ -608,5 +608,101 @@ In this example, the child is the `customers-list` component who wants data from
 - Lastly, we import this routes module into the app module so the rest of the app's modules can also use the routes.
 
 
-### Using Router Outlet
+### Using Router Outlet and Adding More Routing Modules and Routes
 - Responsible for marking spots on the page where components should go or appear when the route is triggered.
+- We typically don't want to throw all our routes into a single routing file. A better approach would be to add the appropriate routes based on the feature.
+
+###  Example customers-routing.module.ts (custom routing module not in root)
+
+    import { NgModule } from '@angular/core';
+    import { RouterModule, Routes } from '@angular/router';
+    import { CustomersComponent } from './customers.component';
+    
+    const  routes: Routes = [
+	    { path:  'customers',  component: CustomersComponent }
+    ];
+    
+    @NgModule({
+	    imports: [ RouterModule.forChild(routes) ],
+	    exports: [ RouterModule ]
+    })
+    
+    export  class CustomersRoutingModule {
+    
+    }
+- Recall that we can only define `imports: [ RouterModule.forRoot(routes) ]`once and that was done in the app-routing.module file. Here, instead we use 'forChild', which adds the routes here to the overall list of routes.
+- Notice how the path is 'customers'. In our root app-routing.module, we define the default and wildcard paths to redirect to '/customers', which will redirect to this path and load the CustomersComponent in the `<router-outlet></router-outlet>`
+- Remember to import your routing module to the correct module so it actually can be used; creating it as its own module is not enough on its own.
+- You can also add route parameters to the route object like so: 
+	- `{ path:  'orders/:id',  component: OrdersComponent }`
+
+
+## Route Parameters
+
+    const  routes: Routes = [
+	    { path:  'orders/:id',  component: OrdersComponent }
+    ];
+- Imagine trying to access a particular order at www.mywebsitedomain.com/orders/404
+- In this example, the OrdersComponent will need to access the id parameter found in the path in order to display the correct order.
+- The ActivatedRoute is the url that is in the address bar on the current page.
+- If we want a parameter, we have to go through the ActivatedRoute object.
+- We add the ActivatedRoute into the constructor, similar to how we injected the dataService, we inject ActivatedRoute.
+- We get a snapshot of the activated route, and get a parameter from it. If the component needed to observe a url that will change while the component is still on the page, it can alternatively subscribe to it instead of taking a snapshot.
+- '+' is shorthand for converting to a number.
+
+### Example orders.component.ts
+
+    import { Component, OnInit } from '@angular/core';
+    import { Router, ActivatedRoute, Params } from '@angular/router';
+    
+    import { DataService } from '../core/data.service';
+    import { ICustomer, IOrder, IOrderItem } from '../shared/interfaces';
+    
+    @Component({
+	    selector:  'app-orders',
+	    templateUrl:  './orders.component.html',
+	    styleUrls: [ './orders.component.css' ]
+    })
+    
+    export  class OrdersComponent implements OnInit {
+    
+	    orders: IOrder[] = [];
+	    customer: ICustomer;
+	    
+	    constructor(private  dataService: DataService,
+				    private  route: ActivatedRoute) { }
+    
+      
+    
+	    ngOnInit() {
+		    let id =  +this.route.snapshot.paramMap.get('id');
+		    this.dataService.getOrders(id).subscribe((orders: IOrder[]) => {
+			    this.orders = orders;
+		    });
+    
+		    this.dataService.getCustomer(id).subscribe((customer: ICustomer) => {
+			    this.customer = customer;
+		    });
+	    }
+    }
+
+
+## RouterLink
+- Need a way to change the page to a url when we click a component.
+- routerLink is a directive from the Router Module.
+
+### Example of router link with parameter
+
+    <tr *ngFor="let cust of filteredCustomers">
+	    <td>
+		    <a [routerLink]="['/orders', cust.id]">
+		    {{ cust.name | capitalize }}
+		    </a>
+	    </td>
+	    <td>{{ cust.city }}</td>
+	    <td>{{ cust.orderTotal | currency:currencyCode:'symbol' }}</td>
+    </tr>
+
+### Example of hard coded link
+
+    <a  routerLink="/customers">View All Customers</a>
